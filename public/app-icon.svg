@@ -1,0 +1,95 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient definitions -->
+    <linearGradient id="crownGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="gemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    
+    <!-- Glow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background circle with gradient -->
+  <circle cx="256" cy="256" r="240" fill="url(#backgroundGradient)" filter="url(#shadow)"/>
+  
+  <!-- Inner circle for depth -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  
+  <!-- Crown base -->
+  <path d="M 150 280 L 362 280 L 350 320 L 162 320 Z" fill="url(#crownGradient)" filter="url(#glow)"/>
+  
+  <!-- Crown points -->
+  <path d="M 150 280 L 170 200 L 190 260 L 210 180 L 230 260 L 256 160 L 282 260 L 302 180 L 322 260 L 342 200 L 362 280 Z" 
+        fill="url(#crownGradient)" filter="url(#glow)"/>
+  
+  <!-- Crown gems -->
+  <circle cx="256" cy="200" r="12" fill="url(#gemGradient)" filter="url(#glow)"/>
+  <circle cx="210" cy="220" r="8" fill="url(#gemGradient)"/>
+  <circle cx="302" cy="220" r="8" fill="url(#gemGradient)"/>
+  <circle cx="170" cy="240" r="6" fill="url(#gemGradient)"/>
+  <circle cx="342" cy="240" r="6" fill="url(#gemGradient)"/>
+  
+  <!-- Business automation elements -->
+  <!-- Gear/cog for automation -->
+  <g transform="translate(180, 350)">
+    <circle cx="0" cy="0" r="25" fill="rgba(255,255,255,0.9)" filter="url(#shadow)"/>
+    <path d="M -15 -8 L -8 -15 L 8 -15 L 15 -8 L 15 8 L 8 15 L -8 15 L -15 8 Z" 
+          fill="url(#backgroundGradient)"/>
+    <circle cx="0" cy="0" r="8" fill="rgba(255,255,255,0.9)"/>
+  </g>
+  
+  <!-- Dollar sign for revenue -->
+  <g transform="translate(332, 350)">
+    <circle cx="0" cy="0" r="25" fill="rgba(255,255,255,0.9)" filter="url(#shadow)"/>
+    <text x="0" y="8" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="url(#backgroundGradient)">$</text>
+  </g>
+  
+  <!-- Upward trending arrow -->
+  <g transform="translate(256, 380)">
+    <path d="M -20 10 L 0 -10 L 20 10 L 10 10 L 10 20 L -10 20 L -10 10 Z" 
+          fill="rgba(34,197,94,0.9)" filter="url(#glow)"/>
+  </g>
+  
+  <!-- Crown highlights -->
+  <path d="M 160 270 L 180 210 L 185 215 L 165 275 Z" fill="rgba(255,255,255,0.3)"/>
+  <path d="M 246 170 L 266 170 L 266 175 L 246 175 Z" fill="rgba(255,255,255,0.4)"/>
+  <path d="M 350 270 L 332 210 L 337 215 L 355 275 Z" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- Sparkle effects -->
+  <g fill="rgba(255,255,255,0.8)">
+    <circle cx="120" cy="150" r="3" filter="url(#glow)"/>
+    <circle cx="390" cy="180" r="2"/>
+    <circle cx="100" cy="320" r="2"/>
+    <circle cx="410" cy="350" r="3" filter="url(#glow)"/>
+    <circle cx="380" cy="120" r="2"/>
+    <circle cx="130" cy="400" r="2"/>
+  </g>
+  
+  <!-- Text elements (optional, can be removed for cleaner icon) -->
+  <text x="256" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="rgba(255,255,255,0.9)">DREAMSELLER</text>
+  <text x="256" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="normal" fill="rgba(255,255,255,0.7)">PRO</text>
+</svg>

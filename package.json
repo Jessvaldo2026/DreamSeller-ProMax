@@ -1,0 +1,87 @@
+{
+  "name": "dreamsellerpro",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:dist": "npm run build && electron-builder --publish=never",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "ios:build": "npm run build && npx cap sync ios && npx cap open ios",
+    "ios:dev": "npx cap run ios --livereload --external",
+    "mobile:prepare": "npm run build && npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/electron": "^2.5.0",
+    "@capacitor/ios": "^7.4.2",
+    "@stripe/stripe-js": "^7.7.0",
+    "@supabase/supabase-js": "^2.53.0",
+    "axios": "^1.11.0",
+    "canvas": "^3.1.2",
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
+    "lucide-react": "^0.534.0",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.5",
+    "pdf-lib": "^1.17.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.7.1",
+    "stripe": "^18.3.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@types/node": "^24.1.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.18",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "globals": "^15.9.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "5.5.3",
+    "typescript-eslint": "^8.3.0",
+    "vite": "^7.0.6",
+    "vite-plugin-checker": "^0.10.2",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.yourapp.desktop",
+    "productName": "DreamSellerPro",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

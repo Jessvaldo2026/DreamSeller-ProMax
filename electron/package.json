@@ -1,0 +1,60 @@
+{
+  "name": "dreamseller-pro-desktop",
+  "version": "1.0.0",
+  "description": "DreamSeller Pro Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "NODE_ENV=development electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.dreamsellerpro.desktop",
+    "productName": "DreamSeller Pro",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../dist/**/*",
+      "../public/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.business",
+      "icon": "../public/app-icon.svg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "../public/app-icon.svg",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "../public/app-icon.svg",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "electron": "^28.1.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1"
+  }
+}
