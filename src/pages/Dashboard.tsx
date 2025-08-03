@@ -1,229 +1,213 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import {
-  Crown, Zap, Settings, TrendingUp, DollarSign, Users, Rocket,
-  Package, Download, FileText, Printer, Briefcase, Monitor,
-  GraduationCap, Code
-} from 'lucide-react';
-import { businessModules } from '../lib/businessModules';
-import { startBusinessModule } from '../lib/startBusinessModule';
+// src/pages/Dashboard.tsx
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+import { Line } from "react-chartjs-2";
+import "chart.js/auto";
+import { X } from "lucide-react";
 
-export default function Dashboard() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+interface DashboardProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
 
-  const [statsData, setStatsData] = useState({
-    active: 0,
-    revenue: 0,
-    users: 1,
-    success: 100
-  });
+export default function Dashboard({ isOpen = true, onClose = () => {} }: DashboardProps) {
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [earningsHistory, setEarningsHistory] = useState<any[]>([]);
+  const [activeBusinesses, setActiveBusinesses] = useState(0);
+  const [recentEarnings, setRecentEarnings] = useState<any[]>([]);
+  const [tickerAmount, setTickerAmount] = useState(0);
+  const [selectedBusiness, setSelectedBusiness] = useState("all");
+  const [businesses, setBusinesses] = useState<any[]>([]);
 
   useEffect(() => {
-    checkUser();
-  }, []);
+    fetchBusinesses();
+    fetchEarnings();
 
-  useEffect(() => {
-    if (user) fetchStats();
-  }, [user]);
+    const sub = supabase
+      .channel("earnings-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "earnings" },
+        (payload) => {
+          if (payload?.new?.amount) {
+            const amount = Number(payload.new.amount) || 0;
+            const businessName = payload.new.business_name || "Unknown";
 
-  const checkUser = async () => {
+            if (selectedBusiness === "all" || businessName === selectedBusiness) {
+              setMonthlyRevenue((prev) => prev + amount);
+              setTickerAmount(amount);
+              setTimeout(() => setTickerAmount(0), 3000);
+              fetchEarnings();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, [selectedBusiness]);
+
+  async function fetchBusinesses() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log('No session found, redirecting to login');
-        navigate('/');
+      const { data, error } = await supabase
+        .from("businesses")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("❌ Businesses fetch error:", error);
         return;
       }
-      console.log('User session found:', session.user.email);
-      setUser(session.user);
-    } catch (error) {
-      console.error('Failed to check user:', error);
-      navigate('/');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const { count: active } = await supabase
-        .from('businesses')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      const { data: earningsData } = await supabase
-        .from('earnings')
-        .select('amount')
-        .eq('user_id', user.id);
-
-      const revenue = earningsData?.reduce((sum, e) => sum + e.amount, 0) || 0;
-
-      setStatsData({
-        active: active || 0,
-        revenue,
-        users: 1,
-        success: 100
-      });
+      setBusinesses(data || []);
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      console.error("❌ Unexpected error fetching businesses:", err);
     }
-  };
-
-  const handleWithdraw = async () => {
-    const response = await fetch('/api/payout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: user?.id,
-        amount: 10.00,
-        destination_account: 'acct_1RnIoULauvzkzhwQ'
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      alert('Payout successful!');
-    } else {
-      alert(`Payout failed: ${data.message}`);
-    }
-  };
-
-  const getModuleIcon = (iconName: string) => {
-    const icons: { [key: string]: any } = {
-      Package, Download, FileText, Printer, Briefcase,
-      Zap, Monitor, GraduationCap, TrendingUp, Code
-    };
-    return icons[iconName] || Package;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white">Loading dashboard...</p>
-        </div>
-      </div>
-    );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white">No user session found. Redirecting...</p>
-        </div>
-      </div>
-    );
+  async function fetchEarnings() {
+    const { data, error } = await supabase
+      .from("earnings")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("❌ Earnings fetch error:", error);
+      return;
+    }
+    if (!data) return;
+
+    setEarningsHistory(data);
+
+    const thisMonth = new Date().getMonth();
+    const filtered =
+      selectedBusiness === "all"
+        ? data
+        : data.filter((e) => e.business_name === selectedBusiness);
+
+    const sum = filtered
+      .filter((e) => new Date(e.created_at).getMonth() === thisMonth)
+      .reduce((acc, cur) => acc + Number(cur.amount || 0), 0);
+    setMonthlyRevenue(sum);
+
+    const active = [...new Set(data.map((e) => e.business_name))].length;
+    setActiveBusinesses(active);
+
+    setRecentEarnings(filtered.slice(-5).reverse());
   }
 
-  const stats = [
-    { label: 'Active Businesses', value: statsData.active, icon: TrendingUp, color: 'text-green-500' },
-    { label: 'Monthly Revenue', value: `$${statsData.revenue.toLocaleString()}`, icon: DollarSign, color: 'text-blue-500' },
-    { label: 'Total Users', value: statsData.users, icon: Users, color: 'text-purple-500' },
-    { label: 'Success Rate', value: `${statsData.success}%`, icon: Rocket, color: 'text-orange-500' },
-  ];
+  const chartData = {
+    labels: earningsHistory
+      .filter((e) => selectedBusiness === "all" || e.business_name === selectedBusiness)
+      .map((e) => new Date(e.created_at).toLocaleDateString()),
+    datasets: [
+      {
+        label: "Daily Earnings ($)",
+        data: earningsHistory
+          .filter((e) => selectedBusiness === "all" || e.business_name === selectedBusiness)
+          .map((e) => e.amount),
+        borderColor: "#4CAF50",
+        backgroundColor: "rgba(76,175,80,0.2)",
+        fill: true,
+        tension: 0.3,
+      },
+    ],
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      <div className="bg-white/10 backdrop-blur-lg border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Crown className="w-8 h-8 text-yellow-400" />
-              <h1 className="text-2xl font-bold text-white">DreamSeller Pro</h1>
-            </div>
-            <button
-              onClick={() => navigate('/settings')}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center space-x-2"
-            >
-              <Zap className="w-4 h-4" />
-              <Settings className="w-6 h-6" />
-            </button>
-          </div>
+    <div
+      className={`fixed top-0 right-0 h-full w-[400px] bg-[#111] text-white shadow-lg transform transition-transform duration-300 z-50 overflow-y-auto ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-800">
+        <h2 className="text-2xl font-bold">📊 Dashboard</h2>
+        <button onClick={onClose}>
+          <X size={28} />
+        </button>
+      </div>
+
+      {/* My Businesses */}
+      <div className="p-4">
+        <h3 className="text-lg font-bold mb-2">My Businesses</h3>
+        {businesses.length > 0 ? (
+          <ul>
+            {businesses.map((b) => (
+              <li key={b.id} className="bg-gray-900 p-3 rounded-lg mb-2">
+                <p className="font-bold">{b.name}</p>
+                <p className="text-sm text-gray-400">{b.category}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-400 text-sm">No active businesses found...</p>
+        )}
+      </div>
+
+      {/* Business Filter */}
+      <div className="p-4">
+        <label className="block mb-2 font-bold text-gray-300">Filter by Business</label>
+        <select
+          value={selectedBusiness}
+          onChange={(e) => setSelectedBusiness(e.target.value)}
+          className="bg-gray-900 text-white p-2 rounded w-full"
+        >
+          <option value="all">All Businesses</option>
+          {[...new Set(earningsHistory.map((e) => e.business_name))].map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 p-4">
+        <div className="bg-gray-900 p-3 rounded-lg">
+          <h3 className="text-gray-400 text-sm">Active Businesses</h3>
+          <p className="text-2xl font-bold">{activeBusinesses}</p>
+        </div>
+        <div className="bg-gray-900 p-3 rounded-lg relative">
+          <h3 className="text-gray-400 text-sm">Monthly Revenue</h3>
+          <p className="text-2xl font-bold">${monthlyRevenue.toLocaleString()}</p>
+          {tickerAmount > 0 && (
+            <span className="absolute top-2 right-2 bg-green-600 px-2 py-1 rounded text-sm animate-bounce">
+              +${tickerAmount}
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-4xl font-bold text-white mb-2">Welcome Back, Entrepreneur</h2>
-          <p className="text-xl text-blue-200">Your automated business empire is generating revenue 24/7</p>
-        </div>
+      {/* Recent Earnings */}
+      <div className="p-4">
+        <h3 className="text-lg font-bold mb-2">Recent Earnings</h3>
+        {recentEarnings.length === 0 ? (
+          <p className="text-gray-400 text-sm">No earnings yet...</p>
+        ) : (
+          <ul className="space-y-2">
+            {recentEarnings.map((e, idx) => (
+              <li key={idx} className="bg-gray-900 p-2 rounded-lg">
+                <span className="font-bold">${e.amount}</span> from {e.business_name} <br />
+                <span className="text-gray-400 text-xs">
+                  {new Date(e.created_at).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-200 mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-white">{stat.value}</p>
-                </div>
-                <stat.icon className={`w-8 h-8 ${stat.color}`} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-white mb-4">Business Modules</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {businessModules.map((module) => {
-              const IconComponent = getModuleIcon(module.icon);
-              return (
-                <div
-                  key={module.id}
-                  onClick={async () => {
-                    if (!user?.id) return alert("No user logged in");
-
-                    if (module.id === 'dropshipping') {
-                      const { launchSmartDropshipping } = await import('../lib/smartDropshippingController');
-                      await launchSmartDropshipping();
-                    }
-
-                    await startBusinessModule(module.id as any, user.id);
-                    navigate(`/business/${module.id}`);
-                  }}
-                  className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all duration-200 cursor-pointer transform hover:scale-105"
-                >
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                      <IconComponent className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-semibold text-sm">{module.name}</h4>
-                      <p className="text-xs text-blue-200">{module.category}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      module.status === 'active' ? 'bg-green-600/20 text-green-400' :
-                      module.status === 'setup' ? 'bg-yellow-600/20 text-yellow-400' :
-                      'bg-gray-600/20 text-gray-400'
-                    }`}>
-                      {module.status}
-                    </span>
-                    <span className="text-green-400 font-semibold text-sm">
-                      ${module.monthlyRevenue.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-10 text-center">
-          <button
-            onClick={handleWithdraw}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg"
-          >
-            Withdraw Earnings
-          </button>
-        </div>
+      {/* Chart */}
+      <div className="p-4">
+        <h3 className="text-lg font-bold mb-2">Revenue Analysis</h3>
+        {earningsHistory.length > 0 ? (
+          <Line data={chartData} />
+        ) : (
+          <p className="text-gray-400 text-sm">No data available...</p>
+        )}
       </div>
     </div>
   );

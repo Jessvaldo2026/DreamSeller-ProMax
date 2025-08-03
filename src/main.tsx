@@ -1,31 +1,39 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { HashRouter } from 'react-router-dom'; // <-- CHANGED HERE
-import App from './App.tsx';
-import './index.css';
-import { offlineManager } from './lib/offline';
-import { incomeTracker } from './lib/realTimeIncome';
 
-const initializeApp = async () => {
+import "./lib/dailyJobs";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { HashRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+import { offlineManager } from "./lib/offline";
+import { incomeTracker } from "./lib/realTimeIncome";
+
+
+async function initializeApp() {
   try {
-    await offlineManager.init();
-    await incomeTracker.startTracking();
+    if (offlineManager?.init) {
+      await offlineManager.init();
+    }
+    if (incomeTracker?.startTracking) {
+      await incomeTracker.startTracking();
+    }
   } catch (error) {
-    console.warn('App initialization warning:', error);
+    console.warn("⚠️ App initialization warning:", error);
   }
-};
+}
 
 initializeApp();
 
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById("root");
+
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <HashRouter> {/* <-- CHANGED HERE */}
+      <HashRouter>
         <App />
       </HashRouter>
     </StrictMode>
   );
 } else {
-  console.error('Root element not found!');
+  console.error("❌ Root element not found!");
 }

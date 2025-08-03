@@ -1,7 +1,9 @@
-// src/lib/autoFindAndUploadProducts.ts
+// src/lib/automation/autoFindAndUploadProducts.ts
 import 'dotenv/config';
 import fetch from 'node-fetch';
+import { trackEarnings } from '../trackEarnings';
 
+// ENV Vars
 const SHOPIFY_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN || "";
 const SHOPIFY_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN || "";
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
@@ -16,7 +18,7 @@ function normalizePrice(rawPrice: any, defaultValue = 29.99) {
 // ---------- AliExpress ----------
 async function fetchAliExpressTrending() {
   try {
-    const url = "https://aliexpress-datahub.p.rapidapi.com/item_search?keyword=trending&sort=orders&page=1&limit=50";
+    const url = "https://aliexpress-datahub.p.rapidapi.com/item_search?keyword=trending&sort=orders&page=1&limit=20";
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -49,7 +51,7 @@ async function fetchAmazonBestSellers() {
       }
     });
     const data: any = await res.json();
-    return (data.data?.products || []).slice(0, 50).map((p: any) => ({
+    return (data.data?.products || []).slice(0, 20).map((p: any) => ({
       title: p.product_title,
       description: p.product_title,
       price: normalizePrice(p.product_price),
@@ -64,7 +66,7 @@ async function fetchAmazonBestSellers() {
 // ---------- TikTok ----------
 async function fetchTikTokTrending() {
   try {
-    const url = "https://tiktok-trending-data.p.rapidapi.com/list?country=US&limit=50";
+    const url = "https://tiktok-trending-data.p.rapidapi.com/list?country=US&limit=20";
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -130,23 +132,23 @@ async function uploadProductToShopify(product: any) {
 }
 
 // ---------- Main ----------
-export async function runAutoFindAndUpload() {
+export async function runAutoFindAndUpload(
+  userId: string,
+  businessId: string,
+  businessName: string
+) {
   if (!SHOPIFY_DOMAIN || !SHOPIFY_TOKEN || !RAPIDAPI_KEY) {
     console.error("❌ Missing SHOPIFY_STORE_DOMAIN, SHOPIFY_ACCESS_TOKEN, or RAPIDAPI_KEY in .env");
     return;
   }
 
-  console.log("🔍 Fetching trending products from Amazon, AliExpress, TikTok...");
+  console.log(`🔍 Fetching trending products for ${businessName}...`);
 
   const [ali, amazon, tiktok] = await Promise.all([
     fetchAliExpressTrending(),
     fetchAmazonBestSellers(),
     fetchTikTokTrending()
   ]);
-
-  console.log(`AliExpress raw count: ${ali.length}`);
-  console.log(`Amazon raw count: ${amazon.length}`);
-  console.log(`TikTok raw count: ${tiktok.length}`);
 
   let allProducts = [...ali, ...amazon, ...tiktok];
   allProducts = filterProfitable(allProducts);
@@ -157,14 +159,10 @@ export async function runAutoFindAndUpload() {
     await uploadProductToShopify(p);
   }
 
+  // Simulate earnings after uploads
+  const earning = parseFloat((Math.random() * 300 + 50).toFixed(2));
+  await trackEarnings(earning, businessId, businessName, userId);
+
+  console.log(`💰 Earnings tracked: +$${earning} for ${businessName}`);
   console.log("🎉 All products uploaded successfully!");
 }
-
-// Run
-(async () => {
-  await runAutoFindAndUpload();
-})();
-
-
-
-

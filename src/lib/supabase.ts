@@ -1,5 +1,9 @@
-import { createClient, type SupabaseClient, type Session } from '@supabase/supabase-js';
-import { SUPABASE_CONFIG } from './env';
+// src/lib/supabase.ts
+import { createClient, type SupabaseClient, type Session, type Subscription } from '@supabase/supabase-js';
+
+// Load from environment variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 const isValidUrl = (url: string): boolean => {
   try {
@@ -11,11 +15,11 @@ const isValidUrl = (url: string): boolean => {
 };
 
 const hasValidCredentials =
-  SUPABASE_CONFIG.url &&
-  SUPABASE_CONFIG.anonKey &&
-  isValidUrl(SUPABASE_CONFIG.url) &&
-  !SUPABASE_CONFIG.url.includes('placeholder') &&
-  !SUPABASE_CONFIG.anonKey.includes('placeholder');
+  SUPABASE_URL &&
+  SUPABASE_ANON_KEY &&
+  isValidUrl(SUPABASE_URL) &&
+  !SUPABASE_URL.includes('placeholder') &&
+  !SUPABASE_ANON_KEY.includes('placeholder');
 
 if (!hasValidCredentials) {
   console.warn('⚠️ Supabase not properly configured. Using mock client for development.');
@@ -35,21 +39,20 @@ const supabaseOptions = {
   }
 };
 
-// Create real or mock Supabase client
+// Create real Supabase client or mock version
 export const supabase: SupabaseClient = hasValidCredentials
-  ? createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, supabaseOptions)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, supabaseOptions)
   : ({
       auth: {
         getSession: () =>
           Promise.resolve({ data: { session: null as Session | null }, error: null }),
-        onAuthStateChange: (
-          _event: string,
-          _session: Session | null
-        ) => ({
+        onAuthStateChange: () => ({
           data: {
             subscription: {
-              unsubscribe: () => {}
-            }
+              unsubscribe: () => {
+                console.log('Mock unsubscribe called.');
+              }
+            } as unknown as Subscription
           }
         }),
         signInWithPassword: () =>
@@ -57,9 +60,10 @@ export const supabase: SupabaseClient = hasValidCredentials
         signOut: () => Promise.resolve({ error: null })
       },
       from: () => ({
-        select: () => ({ data: [], error: null }),
-        insert: () => ({ data: null, error: null }),
-        update: () => ({ data: null, error: null }),
-        delete: () => ({ data: null, error: null })
+        select: () => Promise.resolve({ data: [], error: null }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => Promise.resolve({ data: null, error: null }),
+        delete: () => Promise.resolve({ data: null, error: null })
       })
     } as unknown as SupabaseClient);
+

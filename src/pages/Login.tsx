@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Crown, Mail, Lock, Sparkles } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { FingerprintAuth } from '../lib/fingerprint';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Crown, Mail, Lock, Sparkles } from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { FingerprintAuth } from "../lib/fingerprint";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [fingerprintAvailable, setFingerprintAvailable] = useState(false);
 
@@ -16,18 +16,23 @@ export default function Login() {
   }, []);
 
   const checkFingerprintAvailability = async () => {
-    const available = await FingerprintAuth.isAvailable();
-    setFingerprintAvailable(available);
+    try {
+      const available = await FingerprintAuth.isAvailable();
+      setFingerprintAvailable(available);
+    } catch (err) {
+      console.warn("⚠️ Fingerprint check failed:", err);
+      setFingerprintAvailable(false);
+    }
   };
 
   const login = async () => {
     if (!email.trim()) {
-      alert('Please enter your email address');
+      alert("Please enter your email address");
       return;
     }
 
     if (!password.trim()) {
-      alert('Please enter your password');
+      alert("Please enter your password");
       return;
     }
 
@@ -39,21 +44,22 @@ export default function Login() {
       });
 
       if (error) {
-        console.error('Login error:', error);
-        alert('Login failed: ' + error.message);
+        console.error("❌ Login error:", error);
+        alert("Login failed: " + error.message);
         return;
       }
 
+      // Confirm session exists
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session) {
-        console.log('Login successful. Redirecting...');
-        navigate('/dashboard');
+        console.log("✅ Login successful. Redirecting to dashboard...");
+        navigate("/dashboard");
       } else {
-        alert('Login failed: Session not established.');
+        alert("Login failed: Session not established.");
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      alert('Login failed: Network error');
+    } catch (err: any) {
+      console.error("❌ Login error:", err);
+      alert("Login failed: " + (err.message || "Network error"));
     } finally {
       setLoading(false);
     }
@@ -66,13 +72,13 @@ export default function Login() {
         await login();
       }
     } catch (error) {
-      console.error('Fingerprint login failed:', error);
-      alert('Fingerprint login failed. Please use email and password.');
+      console.error("❌ Fingerprint login failed:", error);
+      alert("Fingerprint login failed. Please use email and password.");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       login();
     }
   };
@@ -88,12 +94,15 @@ export default function Login() {
           <p className="text-blue-200">Automated Business Empire</p>
           <div className="flex items-center justify-center mt-2">
             <Sparkles className="w-4 h-4 text-yellow-400 mr-1" />
-            <span className="text-sm text-yellow-400">Generate Revenue Automatically</span>
+            <span className="text-sm text-yellow-400">
+              Generate Revenue Automatically
+            </span>
             <Sparkles className="w-4 h-4 text-yellow-400 ml-1" />
           </div>
         </div>
 
         <div className="space-y-4">
+          {/* Email */}
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -106,6 +115,7 @@ export default function Login() {
             />
           </div>
 
+          {/* Password */}
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -118,14 +128,16 @@ export default function Login() {
             />
           </div>
 
+          {/* Login Button */}
           <button
             onClick={login}
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging in...' : 'Access Dashboard'}
+            {loading ? "Logging in..." : "Access Dashboard"}
           </button>
 
+          {/* Fingerprint Login */}
           {fingerprintAvailable && (
             <button
               onClick={loginWithFingerprint}
