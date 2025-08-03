@@ -1,0 +1,35 @@
+name: DreamSeller Daily Automation
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # Runs every day at 10:00 UTC
+  workflow_dispatch: # Allows manual run
+
+jobs:
+  run-daily-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 📦 Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: ▶️ Run Daily Jobs
+        run: npx ts-node src/lib/automation/dailyJobs.ts
+        env:
+          VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
+          SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
+          SHOPIFY_ACCESS_TOKEN: ${{ secrets.SHOPIFY_ACCESS_TOKEN }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
+          DROPSHIPPING_BUSINESS_ID: ${{ secrets.DROPSHIPPING_BUSINESS_ID }}
+          DIGITAL_STORE_BUSINESS_ID: ${{ secrets.DIGITAL_STORE_BUSINESS_ID }}
